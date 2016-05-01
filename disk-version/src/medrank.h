@@ -4,8 +4,8 @@
 class BNode;
 class BTree;
 
-struct BLeafNode_Cache {
-  BLeafNode node;
+struct BNode_Cache {
+  BNode node;
   int current_index;
 };
 

@@ -386,16 +386,11 @@ int main(int argc, char const *argv[]) {
   const float MINFREQ = 0.5;
   const int   num_of_random_vectors = 50;
   
-  // float** datas;
-  // float** querys;
-  // float** random_vectors;
-  // float** random_project_list;
-  // int** random_project_rank_list;
-  // init(&datas, &querys, n, d, qn);
-
-  indexing_from_data_set(Mnist_ds, n, d, num_of_random_vectors);
 
 
+  // indexing_from_data_set(Mnist_ds, n, d, num_of_random_vectors);
+
+  medrank_test(Mnist_q, qn, d, num_of_random_vectors);
 
 
   // load the labels data
@@ -417,16 +412,6 @@ int main(int argc, char const *argv[]) {
    return 0;
 }
 
-// void init(float*** datas_ptr, float*** querys_ptr, int n, int d, int qn) {
-//   *datas_ptr = (float**) malloc(sizeof(float*) * n);
-//   for (int i = 0; i < n; i++) {
-//     (*datas_ptr)[i] = (float*) malloc(sizeof(float) * d);
-//   }
-//   *querys_ptr = (float**) malloc(sizeof(float*) * qn);
-//   for (int i = 0; i < qn; i++) {
-//     (*querys_ptr)[i] = (float*) malloc(sizeof(float) * d);
-//   }
-// }
 
 
 

@@ -2,11 +2,13 @@
 
 void assert(bool should, char* msg) {
   if (!should) {
-    printf("assert failx`: %s\n", msg);
+    printf("assert fail: %s\n", msg);
     exit(-1);
   }
 }
-
+void debug(char* msg) {
+  printf("debug: %s\n", msg);
+}
 void error(             // display an error message
   char* msg,              // message
   bool is_exit)           // whether exit
@@ -187,6 +189,7 @@ void indexing_from_data_set(char* Mnist_ds, int n, int d, int num_of_random_vect
     get_btree_name(b_tree_name, i);
     btree->init(b_tree_name, BNODE_SIZE);
     btree->bulkload(random_project_norm_list[i], n);
+    delete btree;
   }
 
   free_random_project_norm_list(random_project_norm_list, n, num_of_random_project_norm_list);
@@ -194,3 +197,62 @@ void indexing_from_data_set(char* Mnist_ds, int n, int d, int num_of_random_vect
   free_datas(datas, n, d);
 
 }
+
+void read_random_vectors_from_file(char* filename, 
+                                   float** &random_vectors,
+                                   int d,
+                                   int num_of_random_vectors) {
+  FILE* file;
+  file = fopen(filename, "r");
+  assert(file != NULL, "the random_vectors file should exist");
+  printf("read_random_vectors_from_file...\n");
+
+  for (int i = 0 ; i < num_of_random_vectors; i++) {
+    int num;
+    fscanf(file, "%d", &num);
+    assert(num == i + 1, "the format of random_vectors file should be correct");
+    for (int j = 0; j < d; j++) {
+      fscanf(file, " %f", &random_vectors[i][j]);
+    }
+    fscanf(file, "\n");
+  }
+}
+void init_querys(float** &querys, int qn, int d) {
+  querys = new float*[qn];
+  for (int i = 0; i < qn; i++)
+    querys[i] = new float[d];
+
+}
+void read_querys_from_file(char* Mnist_q, float** &querys, int qn, int d) {
+  FILE* file;
+  file = fopen(Mnist_q, "r");
+  assert(file != NULL, "the Mnist.q file should exist");
+  printf("read_querys_from_file...\n");
+
+  for (int i = 0 ; i < qn; i++) {
+    int num;
+    fscanf(file, "%d", &num);
+    assert(num == i + 1, "the format of Mnist.q file should be correct");
+    for (int j = 0; j < d; j++) {
+      fscanf(file, " %f", &querys[i][j]);
+    }
+    fscanf(file, "\n");
+  }
+}
+void free_querys(float** &querys, int qn, int d) {
+  for (int i = 0; i < qn; i++) 
+    delete [] querys[i];
+  delete [] querys;
+}
+void medrank_test(char* Mnist_q, int qn, int d, int num_of_random_vectors) {
+  float** random_vectors;
+  init_random_vectors(random_vectors, d, num_of_random_vectors);
+  read_random_vectors_from_file("random_vectors.data" ,random_vectors, d, num_of_random_vectors);
+
+  float** querys;
+  init_querys(querys, qn, d);
+  read_querys_from_file(Mnist_q, querys, qn, d);
+  free_querys(querys, qn, d);
+  free_random_vectors(random_vectors, d, num_of_random_vectors);
+}
+

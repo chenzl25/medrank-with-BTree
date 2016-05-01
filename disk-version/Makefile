@@ -32,4 +32,5 @@ medrank.o: src/medrank.h
 main.o: 
 
 clean:
-	-rm $(OBJS) medrank
+	-rm $(OBJS) medrank 
+	-rm -r Btree_storage
