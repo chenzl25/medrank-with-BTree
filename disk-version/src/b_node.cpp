@@ -110,6 +110,7 @@ void BNode::read_from_buffer(char* buf) {
   buf = get_buffer(_value, buf, sizeof(float) * _num_entries);
   buf = get_buffer(_son, buf, sizeof(int) * _num_entries);
   // printf("%d\n", _level);
+  // printf("%d\n", get_num_entries());
   // printf("%d\n", _num_entries);
   // printf("%d\n", _left_sibling);
   // printf("%d\n", _right_sibling);

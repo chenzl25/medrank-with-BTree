@@ -27,8 +27,12 @@ void free_datas(float** &datas, int n, int d) {
     delete [] datas[i];
   delete [] datas;
 }
-void read_datas(float** &datas, int n, int d, FILE* file) {
+void read_datas_from_file(char* Mnist_ds, float** &datas, int n, int d) {
+  printf("---------------------------------------------------\n");
   printf("read datas...\n");
+  FILE* file;
+  file = fopen(Mnist_ds, "r");
+  assert(file != NULL, "the Mnist_ds file should can be opened.");
   clock_t startTime = (clock_t) -1;
   clock_t endTime   = (clock_t) -1;
   startTime = clock();
@@ -42,6 +46,7 @@ void read_datas(float** &datas, int n, int d, FILE* file) {
   }
   endTime = clock();
   printf("use %.6f s.\n", ((float) endTime - startTime)/CLOCKS_PER_SEC);
+  fclose(file);
 }
 void init_random_vectors(float** &random_vectors, int d, int num_of_random_vectors) {
   random_vectors = new float*[num_of_random_vectors];
@@ -54,7 +59,7 @@ void free_random_vectors(float** &random_vectors, int d, int num_of_random_vecto
   delete [] random_vectors;
 }
 void generate_random_vectors(float** &random_vectors, int d, int num_of_random_vectors) {
-  printf("generate_random_vectors\n");
+  // printf("generate_random_vectors...\n");
   // std::default_random_engine e;
   // std::normal_distribution<> n (0, 1);
   for (int i = 0; i < num_of_random_vectors; i++) {
@@ -70,7 +75,7 @@ void generate_random_vectors(float** &random_vectors, int d, int num_of_random_v
   }
 }
 void store_random_vectors(float** &random_vectors, int d, int num_of_random_vectors) {
-  printf("store_random_vectors...\n");
+  // printf("store_random_vectors...\n");
   FILE* file;
   file = fopen("random_vectors.data", "w");
   if (file == NULL) {
@@ -84,6 +89,7 @@ void store_random_vectors(float** &random_vectors, int d, int num_of_random_vect
     }
     fprintf(file, "\n");
   }
+  fclose(file);
 }
 
 void init_random_project_norm_list(project_entry** &random_project_norm_list,
@@ -116,7 +122,8 @@ void generate_random_project_norm_list(project_entry** &random_project_norm_list
                                int num_of_random_project_norm_list,
                                float** &random_vectors,
                                float** &datas) {
-  printf("random_project_norm_list begin generate... \n");
+  printf("---------------------------------------------------\n");
+  printf("projecting data to random vector... \n");
   clock_t startTime = (clock_t) -1;
   clock_t endTime   = (clock_t) -1;
   
@@ -130,13 +137,17 @@ void generate_random_project_norm_list(project_entry** &random_project_norm_list
   }
   endTime = clock();
   printf("use %fs\n", (float)(endTime - startTime)/CLOCKS_PER_SEC);
-  
+
+  printf("---------------------------------------------------\n"); 
   printf("sort_random_project_norm_list...\n");
   startTime = clock();
+
   for (int i = 0; i < num_of_random_project_norm_list; i++)
     quick_sort(random_project_norm_list[i], 0, n-1);
+  
   endTime = clock();
   printf("use %fs\n", (float)(endTime - startTime)/CLOCKS_PER_SEC);
+
   // for (int i = 0; i < num_of_random_project_norm_list; i++) {
   //   for (int j = 1; j < d; j++) {
   //     assert(random_project_norm_list[i][j-1].value <= random_project_norm_list[i][j].value, "sort should hold");
@@ -154,19 +165,11 @@ void get_btree_name(char b_tree_name[], int i) {
   strcat(b_tree_name, ".data");
 }
 
-void indexing_from_data_set(char* Mnist_ds, int n, int d, int num_of_random_vectors) {
+void indexing_from_data_set(float** datas, int n, int d, int num_of_random_vectors) {
   int num_of_random_project_norm_list = num_of_random_vectors;
-  printf("%s\n", "indexing");
-  FILE* file;
-  file = fopen(Mnist_ds, "r");
-  if (file == NULL) {
-    printf("open %s fail\n", Mnist_ds);
-  }
-  printf("open %s successfully\n", Mnist_ds);
-
-  float** datas;
-  init_datas(datas, n, d);
-  read_datas(datas, n, d, file);
+  printf("---------------------------------------------------\n");
+  printf("%s\n", "indexing...");
+  
   
   float** random_vectors;
   init_random_vectors(random_vectors, d, num_of_random_vectors);
@@ -181,7 +184,13 @@ void indexing_from_data_set(char* Mnist_ds, int n, int d, int num_of_random_vect
                                     num_of_random_vectors,
                                     random_vectors,
                                     datas);
+  printf("---------------------------------------------------\n");
+  printf("BTree bulkload...\n");
+  clock_t startTime = (clock_t) -1;
+  clock_t endTime   = (clock_t) -1;
+  startTime = clock();
 
+  int total_index_size = 0;
   int num_of_b_tree = num_of_random_project_norm_list;
   for (int i = 0; i < num_of_b_tree; i++) {
     BTree* btree = new BTree();
@@ -189,13 +198,17 @@ void indexing_from_data_set(char* Mnist_ds, int n, int d, int num_of_random_vect
     get_btree_name(b_tree_name, i);
     btree->init(b_tree_name, BNODE_SIZE);
     btree->bulkload(random_project_norm_list[i], n);
+    total_index_size += btree->_block_file->num_blocks_ * btree->_block_file->get_blocklength();
     delete btree;
   }
-
+  printf("total index size is %fM\n", (float)total_index_size/1024/1024);
+  endTime = clock();
+  printf("use %fs\n", (float)(endTime - startTime)/CLOCKS_PER_SEC);
+  
+  // free
   free_random_project_norm_list(random_project_norm_list, n, num_of_random_project_norm_list);
   free_random_vectors(random_vectors, d, num_of_random_vectors);
-  free_datas(datas, n, d);
-
+  
 }
 
 void read_random_vectors_from_file(char* filename, 
@@ -205,7 +218,7 @@ void read_random_vectors_from_file(char* filename,
   FILE* file;
   file = fopen(filename, "r");
   assert(file != NULL, "the random_vectors file should exist");
-  printf("read_random_vectors_from_file...\n");
+  // printf("read_random_vectors_from_file...\n");
 
   for (int i = 0 ; i < num_of_random_vectors; i++) {
     int num;
@@ -216,6 +229,7 @@ void read_random_vectors_from_file(char* filename,
     }
     fscanf(file, "\n");
   }
+  fclose(file);
 }
 void init_querys(float** &querys, int qn, int d) {
   querys = new float*[qn];
@@ -227,7 +241,7 @@ void read_querys_from_file(char* Mnist_q, float** &querys, int qn, int d) {
   FILE* file;
   file = fopen(Mnist_q, "r");
   assert(file != NULL, "the Mnist.q file should exist");
-  printf("read_querys_from_file...\n");
+  // printf("read_querys_from_file...\n");
 
   for (int i = 0 ; i < qn; i++) {
     int num;
@@ -238,21 +252,72 @@ void read_querys_from_file(char* Mnist_q, float** &querys, int qn, int d) {
     }
     fscanf(file, "\n");
   }
+  fclose(file);
 }
 void free_querys(float** &querys, int qn, int d) {
   for (int i = 0; i < qn; i++) 
     delete [] querys[i];
   delete [] querys;
 }
-void medrank_test(char* Mnist_q, int qn, int d, int num_of_random_vectors) {
+void medrank_test(float** datas, float** querys, int qn, int d, int num_of_random_vectors) {
+  printf("---------------------------------------------------\n");
+  printf("begin query test...\n");
   float** random_vectors;
   init_random_vectors(random_vectors, d, num_of_random_vectors);
   read_random_vectors_from_file("random_vectors.data" ,random_vectors, d, num_of_random_vectors);
+  
+  int num_of_b_tree = num_of_random_vectors;
+  BTree** btree_arr = new BTree*[num_of_b_tree];
 
-  float** querys;
-  init_querys(querys, qn, d);
-  read_querys_from_file(Mnist_q, querys, qn, d);
-  free_querys(querys, qn, d);
+  for (int i = 0; i < num_of_b_tree; i++) {
+    btree_arr[i] = new BTree();
+    char b_tree_name[30];
+    get_btree_name(b_tree_name, i);
+    btree_arr[i]->init_restore(b_tree_name);
+  }
+
+  printf("---------------------------------------------------\n");
+  printf("medrank search...\n");
+  clock_t startTime = (clock_t) -1;
+  clock_t endTime   = (clock_t) -1;
+  startTime = clock();
+
+  int total_io_cost = 0;
+  FILE* query_result_file;
+  query_result_file = fopen("query-result.data", "w");
+  assert(query_result_file != NULL, "query-result.file should can be open");
+  Medrank* medrank = new Medrank();
+  medrank->init(btree_arr, num_of_b_tree, random_vectors, d);
+  for (int i = 0; i < qn; i++) {
+    float* result;
+    int datas_pos = medrank->search(querys[i], 0.5/*MINFREQ*/, &total_io_cost);
+    result = datas[datas_pos];
+    fprintf(query_result_file, "%d", i+1);
+    for (int j =0 ; j < d; j++) {
+      fprintf(query_result_file, " %d", (int)result[j]);
+    }
+    fprintf(query_result_file,"\n");
+  }
+
+  printf("average of IO Cost is %f\n", (float)total_io_cost/qn);
+
+  endTime = clock();
+  printf("average of Runing Time is %.6fs\n", ((float) endTime - startTime)/CLOCKS_PER_SEC/qn);
+  // free
+  delete medrank;
+
+  for (int i = 0; i < num_of_b_tree; i++)
+    delete btree_arr[i];
+  delete [] btree_arr;
+  
   free_random_vectors(random_vectors, d, num_of_random_vectors);
+  
 }
 
+double distance (int* x, int* y, int d) {
+  double result = 0;
+  for (int i = 0; i < d; i++) {
+    result += (x[i] - y[i]) * (x[i] - y[i]);
+  }
+  return sqrt(result);
+}

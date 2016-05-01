@@ -4,6 +4,7 @@ BTree::BTree() {
   _root_address = -1;
   _block_file = NULL;
   _root_ptr = NULL;
+  _total_entries_count = 0;
 }
 BTree::~BTree() {
   char* blk = new char[_block_file->get_blocklength()];
@@ -11,7 +12,7 @@ BTree::~BTree() {
   _block_file->set_header(blk);
 
   delete [] blk;
-
+  delete _root_ptr;
   delete _block_file;
 }
 
@@ -24,7 +25,6 @@ void BTree::init(char* filename, int block_length) {
   _root_ptr = new BNode();
   _root_ptr->init(0, this);
   _root_address = _root_ptr->get_block_address();
-  delete _root_ptr;
 }
 void BTree::init_restore(char* filename) {
   char b_tree_dir[30] = "./Btree_storage";
@@ -39,13 +39,21 @@ void BTree::init_restore(char* filename) {
   _block_file->read_header(blk);
   read_header(blk);
   delete blk;
+  _root_ptr = new BNode();
+  _root_ptr->init_restore(this, _root_address);
+  // printf("value of node : %f\n",_root_ptr->get_value_of_node());
+  // printf("level: %d\n", _root_ptr->get_level());
+  // printf("son[1]: %d\n", _root_ptr->get_son(2));
+  // printf("get pos by value: %d\n", _root_ptr->find_position_by_value(-111111));
 }
 
 void BTree::bulkload(project_entry* arr, int arr_size) {
-  printf("BTree bulkload...\n");
-  clock_t startTime = (clock_t) -1;
-  clock_t endTime   = (clock_t) -1;
-  startTime = clock();
+  // printf("BTree bulkload...\n");
+  // clock_t startTime = (clock_t) -1;
+  // clock_t endTime   = (clock_t) -1;
+  // startTime = clock();
+
+  int total_entries_count = 0;
   BNode* pre_left_node = NULL;
   BNode* now_left_node = NULL;
 
@@ -71,7 +79,10 @@ void BTree::bulkload(project_entry* arr, int arr_size) {
       delete pre_left_node; pre_left_node = NULL;
     }
     now_left_node->add_new_child(arr[i].value, arr[i].key);
+    total_entries_count++;
   }
+
+  _total_entries_count = total_entries_count;
 
   if (now_left_node) {
     now_left_node->set_right_sibling(-1);
@@ -111,8 +122,6 @@ void BTree::bulkload(project_entry* arr, int arr_size) {
       childNode->init_restore(this, i);
       float value = childNode->get_value_of_node();
       int   key   = childNode->get_block_address();
-        // float value = rand();
-        // int key = rand();
       now_index_node->add_new_child(value, key);
     }
     if (now_index_node) {
@@ -124,16 +133,81 @@ void BTree::bulkload(project_entry* arr, int arr_size) {
     current_level++;
   }
   _root_address = last_index_start_block_address;
-  endTime = clock();
-  printf("use %fs\n", (float)(endTime - startTime)/CLOCKS_PER_SEC);
+  // endTime = clock();
+  // printf("use %fs\n", (float)(endTime - startTime)/CLOCKS_PER_SEC);
 }
 
+void BTree::locate(float query_point, BNode_Cache* h, BNode_Cache* l, int *io_cost) {
+  assert(_root_ptr != NULL, "when BTree::locate _root_ptr should not be null");
+  _inner_locate(_root_ptr, query_point, h, l, io_cost);
+}
 
+void BTree::_inner_locate(BNode* from_node, float query_point, BNode_Cache* h, BNode_Cache* l, int *io_cost) {
+  assert(from_node != NULL, "when BTree::_inner_locate from_ptr should not be null");
+  int index = from_node->find_position_by_value(query_point);
+  if (from_node->get_level() == 0) {
+    if (index == -1) {
+      // here we need to set the l be the left most one in the BTree and h be NULL
+      h->node = NULL;
+      h->current_index = -1;
+      h->io_cost = io_cost;
+      l->node = new BNode();
+      l->node->init_restore(this, from_node->get_block_address());
+      l->io_cost = io_cost;
+      *io_cost = *io_cost + 1;
+      l->current_index = 0;
+      if (from_node->get_block_address() != _root_address) delete from_node;
+      return;
+    }
+    if (index == from_node->get_num_entries() - 1) {
+      // here we need to set the h be the right most one in the BTree and l be NULL
+      l->node = from_node->get_right_sibling();
+      l->current_index = (l->node != NULL)? 0: -1;
+      l->io_cost = io_cost;
+      h->node = new BNode();
+      h->node->init_restore(this, from_node->get_block_address());
+      h->io_cost = io_cost;
+      *io_cost = *io_cost + 1;
+      h->current_index = from_node->get_num_entries() - 1;
+      if (from_node->get_block_address() != _root_address) delete from_node;
+      return;
+    }
+    // common case: index in the range (0, num_entries)
+    h->node = new BNode();
+    h->node->init_restore(this, from_node->get_block_address());
+    h->io_cost = io_cost;
+    *io_cost = *io_cost + 1;
+    h->current_index = index;
+    l->node = new BNode();
+    l->node->init_restore(this, from_node->get_block_address());
+    l->io_cost = io_cost;
+    *io_cost = *io_cost + 1;
+    l->current_index = index+1;
+    if (from_node->get_block_address() != _root_address) delete from_node;
+    return;
+  }
+  // level != 0
+  if (index == -1) {
+    // the point we want to find is less than any value in the BTree
+    // we still go down the BTree, because we need to find the "h" and "l"
+    index = 0;
+  }
+  BNode* childNode = new BNode();
+  childNode->init_restore(this, from_node->get_son(index));
+  *io_cost = *io_cost + 1;
+  if (from_node->get_block_address() != _root_address) delete from_node;
+  _inner_locate(childNode, query_point, h, l, io_cost);
+}
+int BTree::get_total_entries_count() {
+  return _total_entries_count;
+}
 void BTree::read_header(char* blk) {
   memcpy(&_root_address, blk, sizeof(int));
+  memcpy(&_total_entries_count, &blk[sizeof(int)], sizeof(int));
 }
 void BTree::write_header(char* blk) {
   memcpy(blk, &_root_address, sizeof(int));
+  memcpy(&blk[sizeof(int)], &_total_entries_count, sizeof(int));
 }
 
 void BTree::_concat_dir_file(char dir_file[], char dir[], char file[]) {

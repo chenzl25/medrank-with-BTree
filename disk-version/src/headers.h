@@ -17,6 +17,7 @@
 #include "def.h"
 #include "b_tree.h"
 #include "b_node.h"
+#include "b_node_cache.h"
 #include "block_file.h"
 #include "quick_sort.h"
 #include "medrank.h"

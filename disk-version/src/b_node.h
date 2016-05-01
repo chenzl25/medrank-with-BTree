@@ -28,7 +28,7 @@ public:
   void add_new_child(float value, int son);
   int get_son(int index);
   char* put_buffer(char* destination, void* source, int num);
-  char* get_buffer(void* destination, char* source, int num);      
+  char* get_buffer(void* destination, char* source, int num);   
 protected:
   char   _level;          
   int    _num_entries;      
