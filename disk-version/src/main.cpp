@@ -36,9 +36,9 @@ int main(int argc, char const *argv[]) {
   read_querys_from_file(Mnist_q, querys, qn, d);
   
   // indexing
-  // indexing_from_data_set(datas, n, d, num_of_random_vectors);
+  indexing_from_data_set(datas, n, d, num_of_random_vectors);
   // test query
-  medrank_test(datas, querys, qn, d, num_of_random_vectors);
+  medrank_test(datas, n, querys, qn, d, num_of_random_vectors);
   
   // free
   free_datas(datas, n, d);

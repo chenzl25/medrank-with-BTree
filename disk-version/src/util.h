@@ -11,7 +11,7 @@ void init_querys(float** &querys, int qn, int d);
 void read_querys_from_file(char* Mnist_q, float** &querys, int qn, int d);
 void free_querys(float** &querys, int qn, int d);
 void indexing_from_data_set(float** datas, int n, int d, int num_of_random_vectors);
-void medrank_test(float** datas, float** querys, int qn, int d, int num_of_random_vectors);
+void medrank_test(float** datas, int n, float** querys, int qn, int d, int num_of_random_vectors);
 
 
 #endif

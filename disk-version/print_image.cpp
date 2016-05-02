@@ -23,7 +23,7 @@ double distance (int* x, int* y) {
 }
 int main() {
   FILE *result_file, *nearest_file, *query_file;
-  result_file = fopen("query-result.data", "r");
+  result_file = fopen("medrank-query-result.data", "r");
   int a[100][28*28];
   int b[100][28*28];
   int c[100][28*28];
@@ -37,7 +37,7 @@ int main() {
     }
     fscanf(result_file, "\n");
   }
-  nearest_file = fopen("./data/nearest.q", "r");
+  nearest_file = fopen("l2nn-query-result.data", "r");
   for (int i = 0; i < n; i++) {
     int tem;
     fscanf(nearest_file, "%d", &tem);
@@ -65,7 +65,6 @@ int main() {
   for (int i = 0; i < n; i++) {
     double ratio = distance(a[i], c[i]) / distance(b[i], c[i]);
     avg += ratio;
-    printf("ratio%d: %f\n", i, ratio);
   }
   printf("avg: %f", avg / n);
 
