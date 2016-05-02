@@ -37,6 +37,7 @@ int main(int argc, char const *argv[]) {
   
   // indexing
   indexing_from_data_set(datas, n, d, num_of_random_vectors);
+  
   // test query
   medrank_test(datas, n, querys, qn, d, num_of_random_vectors);
   

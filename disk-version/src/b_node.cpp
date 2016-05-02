@@ -129,13 +129,21 @@ void BNode::write_to_buffer(char* buf) {
   buf = put_buffer(buf, _son, sizeof(int) * _num_entries);
 }           
 int BNode::find_position_by_value(float value) {
-  // TODO change the linear scan to binary search
-  for (int i = _num_entries-1; i >= 0; i--) {
-    if (_value[i] <= value) {
-      return i;
+  if (_num_entries <= 0) return -1;
+  if (_value[0] > value) return -1;
+  // binary search
+  int l = 0;
+  int r = _num_entries-1;
+  int m;
+  while (l < r) {
+    m = (l+r+1) / 2;
+    if (_value[m] > value) {
+      r = m-1;
+    } else {
+      l = m;
     }
   }
-  return -1;
+  return l;
 }                     
 BNode* BNode::get_left_sibling() {
   assert(_btree != NULL, "_btree should not be NULL");

@@ -49,9 +49,6 @@ void BTree::init_restore(char* filename) {
 
 void BTree::bulkload(project_entry* arr, int arr_size) {
   // printf("BTree bulkload...\n");
-  // clock_t startTime = (clock_t) -1;
-  // clock_t endTime   = (clock_t) -1;
-  // startTime = clock();
 
   int total_entries_count = 0;
   BNode* pre_left_node = NULL;
@@ -133,8 +130,6 @@ void BTree::bulkload(project_entry* arr, int arr_size) {
     current_level++;
   }
   _root_address = last_index_start_block_address;
-  // endTime = clock();
-  // printf("use %fs\n", (float)(endTime - startTime)/CLOCKS_PER_SEC);
 }
 
 void BTree::locate(float query_point, BNode_Cache* h, BNode_Cache* l, int *io_cost) {
